@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-"""A template for scikit-learn compatible packages."""
+"""A python and sklearn compatible implementation of ML-MLM."""
 
 import codecs
 import os
@@ -7,19 +7,19 @@ import os
 from setuptools import find_packages, setup
 
 # get __version__ from _version.py
-ver_file = os.path.join('skltemplate', '_version.py')
+ver_file = os.path.join('src', '_version.py')
 with open(ver_file) as f:
     exec(f.read())
 
-DISTNAME = 'sklearn-template'
-DESCRIPTION = 'A template for scikit-learn compatible packages.'
+DISTNAME = 'sklearn-mlmlm'
+DESCRIPTION = 'A python and sklearn compatible implementation of ML-MLM.'
 with codecs.open('README.rst', encoding='utf-8-sig') as f:
     LONG_DESCRIPTION = f.read()
-MAINTAINER = 'V. Birodkars, G. Lemaitre'
-MAINTAINER_EMAIL = 'vighneshbirodkar@nyu.edu, g.lemaitre58@gmail.com'
-URL = 'https://github.com/scikit-learn-contrib/project-template'
+MAINTAINER = 'Daniel E Fredriksen'
+MAINTAINER_EMAIL = 'dfredriksen@quantyra.org'
+URL = 'https://github.com/quantyra/scikit-mlmlm'
 LICENSE = 'new BSD'
-DOWNLOAD_URL = 'https://github.com/scikit-learn-contrib/project-template'
+DOWNLOAD_URL = 'https://github.com/quantyra/scikit-mlmlm'
 VERSION = __version__
 INSTALL_REQUIRES = ['numpy', 'scipy', 'scikit-learn']
 CLASSIFIERS = ['Intended Audience :: Science/Research',
