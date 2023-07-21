@@ -23,8 +23,6 @@ DOWNLOAD_URL = 'https://github.com/quantyra/scikit-mlmlm'
 VERSION = __version__
 INSTALL_REQUIRES = ['numpy', 'scipy', 'scikit-learn']
 CLASSIFIERS = ['Intended Audience :: Science/Research',
-               'Intended Audience :: Developers',
-               'License :: OSI Approved',
                'Programming Language :: Python',
                'Topic :: Software Development',
                'Topic :: Scientific/Engineering',
@@ -32,10 +30,7 @@ CLASSIFIERS = ['Intended Audience :: Science/Research',
                'Operating System :: POSIX',
                'Operating System :: Unix',
                'Operating System :: MacOS',
-               'Programming Language :: Python :: 2.7',
-               'Programming Language :: Python :: 3.5',
-               'Programming Language :: Python :: 3.6',
-               'Programming Language :: Python :: 3.7']
+               'Programming Language :: Python :: 3.10']
 EXTRAS_REQUIRE = {
     'tests': [
         'pytest',
