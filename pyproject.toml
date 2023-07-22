@@ -2,7 +2,7 @@
 
 [tool.poetry]
 name = "sklearn_mlmlm"
-version = "0.0.9"
+version = "0.0.12"
 authors = ["Daniel E Fredriksen <dfredriksen@quantyra.org>"]
 description = "A python and sklearn compatible implementation of ML-MLM."
 readme = "README.rst"
