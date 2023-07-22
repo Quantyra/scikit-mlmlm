@@ -2,13 +2,14 @@
 This is a module to be used as a reference for building other modules
 """
 import numpy as np
-import sys
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn.utils.multiclass import unique_labels
 from sklearn.metrics import euclidean_distances
 from warnings import showwarning
 from sklearn.metrics.pairwise import pairwise_distances
+from scipy.spatial.distance import pdist
+import sys
 
 class MultiLabelMLMClassifier(ClassifierMixin, BaseEstimator):
 
@@ -22,10 +23,11 @@ class MultiLabelMLMClassifier(ClassifierMixin, BaseEstimator):
         [Dx,Irem,Ik,R,K,dx_alpha,Dy,P,hat_matrix,B_p] = self._dist_reg_train(X, y)
 
         # Compute Local Rcut thresholding values
-        Klr = pairwise_distances(X, R) @ np.linalg.pinv(np.diag(np.linalg.norm(R, axis=0)))
+        Klr = self._local_rcut(y, pairwise_distances(X, R) @ B_p)
 
-        p_best, tc = self._loocv_train(hat_matrix, Dy, X, y, p_grid)
+        p_best, tc, score = self._loocv_train(hat_matrix, Dy, X, y, p_grid)
 
+        self.score = score
         self.p_best = p_best
         self.tc = tc
         self.Klr = Klr
@@ -64,23 +66,48 @@ class MultiLabelMLMClassifier(ClassifierMixin, BaseEstimator):
         # Input validation
         X = check_array(X)
 
-        y = self._ml_mlm_pred()
+        y = self._ml_mlm_pred(X)
+        y_pred = y > self.tc
+        return y_pred
+
+    def predict_proba(self, X):
+        """ A reference implementation of a prediction for a classifier.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            The input samples.
+
+        Returns
+        -------
+        y : ndarray, shape (n_samples,)
+            The label for each sample is the label of the closest sample
+            seen during fit.
+        """
+        # Check is fit had been called
+        check_is_fitted(self, ['X_', 'y_'])
+
+        # Input validation
+        X = check_array(X)
+
+        y = self._ml_mlm_pred(X)
         return y
 
     def _loocv_train(self, hat_matrix, Dy, Xtrain, Ytrain, p_grid):
     # ML-MLM training with LOOCV using PRESS ranking loss statistic
-        hat_matrix = self.hat_matrix
-        Yhat = np.dot(hat_matrix, Dy)
+        Yhat = hat_matrix @ Dy
         N = Xtrain.shape[0]
 
         # Out-of-sample distance estimates via LOOCV
-        Dy_pred_PRESS = np.abs((Yhat - np.diag(hat_matrix) * Dy) / (np.ones(N) - np.diag(hat_matrix)))
+        Dy_pred_PRESS = np.abs(
+            (Yhat - np.diag(hat_matrix) * Dy) / (np.ones(N) - np.diag(hat_matrix))
+        )
 
-        score = np.zeros(len(p_grid))
-        rloss_best = np.inf
-        for p_ind in range(len(p_grid)):
+        score = np.zeros(p_grid.shape[0])
+        rloss_best = sys.float_info.max
+        for p_ind in range(p_grid.shape[0]):
             p = p_grid[p_ind]
-            Rho_inv = 1. / np.power(Dy_pred_PRESS, p)  # Rho_inv is K x N
+            Rho_inv = 1 / np.power(Dy_pred_PRESS, p)  # Rho_inv is K x N
             r_sum = np.sum(Rho_inv, axis=1)  # r_sum is N x 1
             maxrho = np.max(Rho_inv, axis=1)  # maxrho is N x 1
 
@@ -99,8 +126,9 @@ class MultiLabelMLMClassifier(ClassifierMixin, BaseEstimator):
                 r_sum[Irs] = maxrho[Irs]
 
             W = Rho_inv / r_sum[:, np.newaxis]
-            Yscore = np.dot(W, Ytrain)
-            score[p_ind] = self._ranking_loss(Ytrain, Yscore)
+            Yscore = W @ Ytrain
+            loss_score, _ = self._ranking_loss(Ytrain, Yscore)
+            score[p_ind] = loss_score
             print(f"p = {p}, rloss statistic =  {score[p_ind]}")
             if score[p_ind] < rloss_best:
                 rloss_best = score[p_ind]
@@ -111,23 +139,24 @@ class MultiLabelMLMClassifier(ClassifierMixin, BaseEstimator):
         p_best = p_grid[min_p_ind]
 
         # Cardinality-based thresholding selection for the optimized ML-MLM model
-        CtrN = np.sum(Ytrain)
-        Ytc = np.sort(Yscore_temp)[::-1]
+        CtrN = int(np.sum(Ytrain))
+        Ytc = sorted(Yscore_temp.flatten(), reverse=True)
         tc = (Ytc[CtrN-1] + Ytc[CtrN]) / 2
 
         return p_best, tc, score      
 
     def _dist_reg_train(self, Xtrain, Ytrain):
         # Computing input space distance matrix
-        Dx = np.linalg.norm(Xtrain[:, np.newaxis] - Xtrain, axis=2)
+        Dx = pairwise_distances(Xtrain, Xtrain)
         Irem, Ik = self._find_rem_inds(Xtrain)
         Dx = np.delete(Dx, Irem, axis=1)
-        R = np.delete(Xtrain, Irem, axis=0)
+        R = Xtrain
+        R = np.delete(R, Irem, axis=0)
         K = R.shape[0]
-        dx_alpha = np.quantile(np.linalg.norm(R[:, np.newaxis] - R, axis=2), 0.001)
+        dx_alpha = np.quantile(pdist(R), 0.001)
 
         # Computing output space distance matrix
-        Dy = np.linalg.norm(Ytrain[:, np.newaxis] - Ytrain, axis=2)
+        Dy = pairwise_distances(Ytrain, Ytrain)
 
         # Computing pinv
         P = np.linalg.pinv(Dx.T @ Dx + dx_alpha * np.eye(K))
@@ -166,16 +195,15 @@ class MultiLabelMLMClassifier(ClassifierMixin, BaseEstimator):
         return score, score_arr
 
 
-    def _ml_mlm_pred(self, Xtest, T):
+    def _ml_mlm_pred(self, Xtest):
         R = self.R 
         B = self.B_p
         p = self.p_best 
-        tc = self.tc
         N = Xtest.shape[0]
         print('Computing prediction for a test set N =', N)
 
         # Predict distances in label space
-        pred_dists = np.dot(Xtest, R) @ B
+        pred_dists = np.dot(pairwise_distances(Xtest, R), B)
         
         # Prepare inverse distance weighting components
         Rho_inv = 1/np.abs(pred_dists)**p # Rho_inv is N x K
@@ -200,12 +228,9 @@ class MultiLabelMLMClassifier(ClassifierMixin, BaseEstimator):
         W = Rho_inv / r_sum[:, np.newaxis]
         
         # Construct convex combinations of label vectors (label scoring)
-        Yscore = np.dot(W, T)
+        Yscore = W @ self.y_
         
-        # Global thresholding (classification)
-        Ypred = Yscore > tc
-        
-        return Ypred, Yscore
+        return Yscore
     
     def _find_rem_inds(self, X):
         N = X.shape[0]
@@ -214,3 +239,10 @@ class MultiLabelMLMClassifier(ClassifierMixin, BaseEstimator):
         Idp = np.setdiff1d(np.arange(N),I)
         
         return Idp, I
+
+    def _local_rcut(self, T, pred_dists):
+        min_inds = np.argmin(pred_dists, axis=1)
+        Ts = T[min_inds]
+        Klr = np.sum(Ts, axis=1)
+        
+        return Klr
