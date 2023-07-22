@@ -2,9 +2,7 @@ import numpy as np
 import scipy.io
 
 from sklearn.preprocessing import MinMaxScaler
-
-
-from src.mlmlm import MultiLabelMLMClassifier
+from sklearn_mlmlm import MultiLabelMLMClassifier
 
 # load test data
 dataname = 'SYNTHETIC'
