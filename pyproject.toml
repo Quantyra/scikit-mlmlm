@@ -1,0 +1,39 @@
+[project]
+
+[tool.poetry]
+name = "sklearn_mlmlm"
+version = "1.0.0a2"
+authors = ["Daniel E Fredriksen <dfredriksen@quantyra.org>"]
+description = "A python and sklearn compatible implementation of ML-MLM."
+readme = "README.rst"
+classifiers = [
+    'Intended Audience :: Science/Research',
+    'Programming Language :: Python',
+    'Topic :: Software Development',
+    'Topic :: Scientific/Engineering',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
+    'Programming Language :: Python :: 3.10'
+]
+packages = [{ include = "sklearn_mlmlm", from = "src" }]
+
+[tool.poetry.dependencies]
+python=">=3.10,<3.13"
+joblib = "^1.3.1"
+numpy = "^1.25.1"
+scikit-learn = "^1.3.0"
+scipy = "^1.11.1"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.3.3"
+pytest = "^7.4.0"
+
+[project.urls]
+"Homepage" = 'https://github.com/quantyra/scikit-mlmlm'
+"Bug Tracker" = 'https://github.com/quantyra/scikit-mlmlm/issues'
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
