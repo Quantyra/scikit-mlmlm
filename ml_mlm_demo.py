@@ -43,8 +43,8 @@ p_grid = 2**grid_temp
 
 print("Running LOOCV ML-MLM training...")
 
-model = MultiLabelMLMClassifier()
-model.fit(Xtrain, Ytrain, p_grid)
+model = MultiLabelMLMClassifier(p_grid)
+model.fit(Xtrain, Ytrain)
 [ypred, yscore] = model.predict(Xtest, Ytrain)
 print(ypred)
 print(yscore)
