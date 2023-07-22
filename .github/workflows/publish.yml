@@ -41,7 +41,7 @@ jobs:
         if: ${{ github.ref != 'refs/heads/main' }}
       - name: Update patch version
         run: poetry version patch
-        if: ${{ github.ref != 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/main' }}
       - name: Store version number in GitHub environment
         run: echo "PROJECT_VERSION=$(poetry version -s)" >> $GITHUB_OUTPUT
         id: version
