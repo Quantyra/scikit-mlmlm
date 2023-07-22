@@ -34,8 +34,8 @@ jobs:
         run: poetry run pre-commit
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
-        env: 
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}        
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       - name: Update prerelease version
         run: poetry version prerelease
         if: ${{ github.ref != 'refs/heads/main' }}
