@@ -2,7 +2,7 @@ import numpy as np
 import scipy.io
 
 from sklearn.preprocessing import MinMaxScaler
-from sklearn_mlmlm.classifiers import MultiLabelMLMClassifier
+from src.sklearn_mlmlm.classifiers import MultiLabelMLMClassifier
 
 # load test data
 dataname = "SYNTHETIC"
@@ -45,6 +45,10 @@ print("Running LOOCV ML-MLM training...")
 
 model = MultiLabelMLMClassifier(p_grid)
 model.fit(Xtrain, Ytrain)
-[ypred, yscore] = model.predict(Xtest, Ytrain)
+ypred = model.predict(Xtest)
+yscore = model.predict_proba(Xtest)
 print(ypred)
 print(yscore)
+matches = ypred.astype(int) == Ytest
+accuracy = (matches.astype(int).sum()) / (matches.shape[0] * matches.shape[1])
+print(accuracy)
