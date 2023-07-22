@@ -12,11 +12,42 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      - name: Run a one-line script
-        run: echo Hello from Octo Organization
-
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - run: git config user.name = 'quantyra cicd'
+      - run: git config user.email = 'cicd@quantyra.org'
+      - run: git fetch --all && git config pull.rebase false
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          architecture: 'x64'
+      - run: git stash
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      - name: Install dependencies
+        run: poetry install
+      - name: Pre-commit check
+        run: poetry run pre-commit
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         env: 
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}        
+      - name: Update prerelease version
+        run: poetry version prerelease
+        if: ${{ github.ref != 'refs/heads/main' }}
+      - name: Update patch version
+        run: poetry version patch
+        if: ${{ github.ref != 'refs/heads/main' }}
+      - name: Store version number in GitHub environment
+        run: echo "PROJECT_VERSION=$(poetry version -s)" >> $GITHUB_OUTPUT
+        id: version
+      - name: Publish to Pypi
+        run: |
+          poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
+          poetry publish --build
+      - name: Publish version change to repository
+        run: git add . && git tag ${{ steps.version.outputs.PROJECT_VERSION }} && git commit -m 'Bump version [skip ci]' && git push && git push --tags
